@@ -17,6 +17,8 @@ const CreateNFT = () => {
     const { uploadToIpfs, createNFT } = useContext(NFTContext);
     const router = useRouter()
 
+    // console.log(formInput)
+
     const onDrop = useCallback(async (acceptedFile) => {
       // console.log(acceptedFile[0].getWebkitRelativePath)
       // console.log(acceptedFile[0]);

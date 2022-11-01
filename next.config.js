@@ -13,6 +13,9 @@ const nextConfig = {
 
     return config;
   },
+  images: {
+    domains: ["gateway.pinata.cloud"],
+  },
 };
 
 module.exports = nextConfig

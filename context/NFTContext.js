@@ -101,7 +101,7 @@ export const NFTProvider = ({ children }) => {
   const createNFT = async (formInput, fileUrl, router) => {
     const { name, description, price } = formInput;
     if (!name || !description || !price || !fileUrl) return;
-    const mdata = JSON.stringify({ name, description, image: fileUrl });
+    const mdata = { name, description, image: fileUrl };
     try {
       var data = JSON.stringify({
         pinataOptions: {
@@ -154,23 +154,72 @@ export const NFTProvider = ({ children }) => {
   const fetchNFTs = async () => {
     const provider = new ethers.providers.JsonRpcProvider()
     const contract = fetchContract(provider)
-    const data = await contract.fetchMarketItems();
-    const items = await Promise.all(data.map(async ({tokenId, seller, owner, price: unformattedPrice}) => {
+    const dataItem = await contract.fetchMarketItems();
+    console.log(dataItem)
+    const items = await Promise.all(dataItem.map(async ({tokenId, seller, owner, price: unformattedPrice}) => {
       const tokenUri = await contract.tokenURI(tokenId)
-      const {data: {image, name, description}} = await axios.get(tokenUri)
-      const price = ethers.utils.parseUnits(unformattedPrice.toString(), "ether");
-
+      // const {data: {image, name, description}} = await axios.get(tokenUri)
+      // console.log(tokenUri.slice(34))
+      // var config = {
+      //   method: "get",
+      //   url: `https://api.pinata.cloud/data/pinList?hashContains=${tokenUri.slice(34)}`,
+      //   headers: {
+      //     Authorization: "Bearer PINATA JWT",
+      //   },
+      // };
+      const data = await axios.get(tokenUri);
+      const price = ethers.utils.formatUnits(unformattedPrice.toString(), "ether");
+      console.log(data.data.mdata)
       return {
-        price, 
+        price,
         tokenId: tokenId.toNumber(),
         seller,
         owner,
-        image,
-        name,
-        description,
-        tokenUri
-      }
+        image: data.data.mdata.image,
+        name: data.data.mdata.name,
+        description: data.data.mdata.description,
+        tokenUri,
+      };
     }))
+    console.log("items", items)
+    return items
+  }
+
+  const fetchMyNFTorListedNFT = async (type) => {
+    const web3modal = new Web3Modal();
+    const connection = await web3modal.connect();
+    const provider = new ethers.providers.Web3Provider(connection);
+    const signer = provider.getSigner();
+    const contract = fetchContract(signer);
+
+    const dataItem =
+      type === "fetchItemsListed"
+        ? await contract.fetchItemsListed()
+        : await contract.fetchMyNFTs();
+
+    const items = await Promise.all(
+      dataItem.map(
+        async ({ tokenId, seller, owner, price: unformattedPrice }) => {
+          const tokenUri = await contract.tokenURI(tokenId);
+          const data = await axios.get(tokenUri);
+          const price = ethers.utils.formatUnits(
+            unformattedPrice.toString(),
+            "ether"
+          );
+          // console.log(data.data.mdata);
+          return {
+            price,
+            tokenId: tokenId.toNumber(),
+            seller,
+            owner,
+            image: data.data.mdata.image,
+            name: data.data.mdata.name,
+            description: data.data.mdata.description,
+            tokenUri,
+          };
+        }
+      )
+    );
     return items
   }
 
@@ -182,7 +231,8 @@ export const NFTProvider = ({ children }) => {
         currentAccount,
         uploadToIpfs,
         createNFT,
-        fetchNFTs
+        fetchNFTs,
+        fetchMyNFTorListedNFT,
       }}
     >
       {children}
